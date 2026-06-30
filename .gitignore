@@ -4,3 +4,4 @@ ohi_transcripts.xml
 initial_obs.txt
 .DS_Store
 parsed_unique_transcripts.json
+*.json
