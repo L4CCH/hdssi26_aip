@@ -17,23 +17,18 @@ OUTPUT_BY_TRANSCRIPT = "gliner_by_transcript.json"
 OUTPUT_BY_ENTITY = "gliner_by_entity.json"
 
 # input bib numbers
-INPUT_BIB_NUMBERS = ["48316"]
+INPUT_BIB_NUMBERS = ["48316", "4661-11"]
 
 # zero-shot labels 
 LABELS = [
-    "person",
+    "name",
     "laboratory",
     "university",
-    "institution",
-    "government agency",
-    "scientific instrument",
-    "scientific experiment",
-    "particle accelerator",
-    "particle",
-    "field of study",
+    "organization",
     "award",
     "conference",
-    "place"
+    "city",
+    "country"
 ]
 
 # gliner configurations
