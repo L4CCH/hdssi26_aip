@@ -13,8 +13,11 @@ from collections import defaultdict, Counter
 
 # I/O directories
 INPUT_FILE = "cleaned_unique_transcripts.json"
-OUTPUT_BY_TRANSCRIPT = "gliner_by_transcript_first100.json"
-OUTPUT_BY_ENTITY = "gliner_by_entity_first100.json"
+OUTPUT_BY_TRANSCRIPT = "gliner_by_transcript.json"
+OUTPUT_BY_ENTITY = "gliner_by_entity.json"
+
+# input bib numbers
+INPUT_BIB_NUMBERS = ["48316"]
 
 # zero-shot labels 
 LABELS = [
@@ -54,7 +57,13 @@ nlp.add_pipe("gliner_spacy", config=custom_config)
 with open(INPUT_FILE, "r", encoding="utf-8") as f:
     transcripts = json.load(f)
 
-subset = transcripts[:3]
+
+wanted_bibs = set(str(bib).strip() for bib in INPUT_BIB_NUMBERS)
+
+subset = [
+    transcript for transcript in transcripts
+    if str(transcript.get("field_bib_number")).strip() in wanted_bibs
+]
 
 json_by_transcript = []
 entity_contexts = defaultdict(lambda: {
