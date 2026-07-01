@@ -16,7 +16,7 @@ OUTPUT_BY_TRANSCRIPT = "spacy_by_transcript.json"
 OUTPUT_BY_ENTITY = "spacy_by_entity.json"
 
 # input bib numbers
-INPUT_BIB_NUMBERS = ["48316", "4661-11"]
+INPUT_BIB_NUMBERS = ["46733", "47293"]
 
 # baseline spaCy model
 # install first if needed:

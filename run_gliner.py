@@ -17,11 +17,13 @@ OUTPUT_BY_TRANSCRIPT = "gliner_by_transcript.json"
 OUTPUT_BY_ENTITY = "gliner_by_entity.json"
 
 # input bib numbers
-INPUT_BIB_NUMBERS = ["48316", "4661-11"]
+INPUT_BIB_NUMBERS = ["46733", "47293"]
 
 # zero-shot labels 
 LABELS = [
     "name",
+    "job",
+    "calendar date",
     "laboratory",
     "university",
     "organization",
@@ -33,7 +35,7 @@ LABELS = [
 
 # gliner configurations
 custom_config = {
-    "gliner_model": "urchade/gliner_multi",
+    "gliner_model": "urchade/gliner_multi-v2.1",
     "chunk_size": 250,
     "labels": LABELS,
     "style": "ent",
