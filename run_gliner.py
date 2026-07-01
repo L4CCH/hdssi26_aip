@@ -12,7 +12,7 @@ import spacy
 from collections import defaultdict, Counter
 
 # I/O directories
-INPUT_FILE = "cleaned_unique_transcripts.json"
+INPUT_FILE = "bib_interviewee_date_body.json"
 OUTPUT_BY_TRANSCRIPT = "gliner_by_transcript.json"
 OUTPUT_BY_ENTITY = "gliner_by_entity.json"
 
@@ -79,6 +79,7 @@ also groups by transcript to count entities
 for i, transcript in enumerate(subset, start=1):
     bib = str(transcript.get("field_bib_number"))
     interviewee = transcript.get("interviewee")
+    interview_date = transcript.get("interview_date")
     body = transcript.get("body", "")
 
     print(f"Processing {i}/{len(subset)}: bib {bib}")
@@ -118,6 +119,7 @@ for i, transcript in enumerate(subset, start=1):
     json_by_transcript.append({
         "bib": bib,
         "interviewee": interviewee,
+        "interview_date": interview_date,
         "entities": transcript_entities
     })
 
