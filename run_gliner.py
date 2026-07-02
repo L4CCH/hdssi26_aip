@@ -24,7 +24,7 @@ INPUT_BIB_NUMBERS = [] # ["46733", "47293"]
 # Option 2: batching by slice
 # Used only if INPUT_BIB_NUMBERS = []
 START = 0      # inclusive
-END = 2       # exclusive
+END = 100       # exclusive
 
 # zero-shot labels 
 LABELS = [
@@ -75,13 +75,13 @@ if INPUT_BIB_NUMBERS:
         if str(transcript.get("field_bib_number")).strip() in wanted_bibs
     ]
 
-    print(f"Running on {len(subset)} selected bib numbers.")
+    print(f"Running on {len(subset)} selected bib numbers.", flush=True)
 
 else:
     subset = transcripts[START:END]
 
-    print(f"Running on transcript slice {START}:{END}.")
-    print(f"Total transcripts in batch: {len(subset)}")
+    print(f"Running on transcript slice {START}:{END}.", flush=True)
+    print(f"Total transcripts in batch: {len(subset)}", flush=True)
 
 json_by_transcript = []
 
@@ -104,7 +104,7 @@ for i, transcript in enumerate(subset, start=1):
     interview_date = transcript.get("interview_date")
     body = transcript.get("body", "")
 
-    print(f"Processing {i}/{len(subset)}: bib {bib}")
+    print(f"Processing {i}/{len(subset)}: bib {bib}", flush=True)
 
     doc = nlp(body)
 
@@ -172,5 +172,5 @@ with open(OUTPUT_BY_TRANSCRIPT, "w", encoding="utf-8") as f:
 with open(OUTPUT_BY_ENTITY, "w", encoding="utf-8") as f:
     json.dump(json_by_entity, f, indent=2, ensure_ascii=False)
 
-print(f"Saved transcript-level JSON to {OUTPUT_BY_TRANSCRIPT}")
-print(f"Saved entity-level JSON to {OUTPUT_BY_ENTITY}")
+print(f"Saved transcript-level JSON to {OUTPUT_BY_TRANSCRIPT}", flush=True)
+print(f"Saved entity-level JSON to {OUTPUT_BY_ENTITY}", flush=True)
