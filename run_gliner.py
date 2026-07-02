@@ -2,10 +2,11 @@
 run_gliner.py
 
 script to run GLiNER wrapper around spaCy NER
-- obtains entities from a user-specified subset of transcripts
+- obtains entities from either:
+  1. specific bib numbers, or
+  2. a sliced batch of transcripts
 - outputs 2 JSON files: by transcript and by entities
 """
-
 
 import json
 import spacy
@@ -16,8 +17,14 @@ INPUT_FILE = "bib_interviewee_date_body.json"
 OUTPUT_BY_TRANSCRIPT = "gliner_by_transcript.json"
 OUTPUT_BY_ENTITY = "gliner_by_entity.json"
 
-# input bib numbers
-INPUT_BIB_NUMBERS = ["46733", "47293"]
+# Option 1: specific bib numbers
+# If this list is non-empty, the script will use these bib numbers
+INPUT_BIB_NUMBERS = [] # ["46733", "47293"]
+
+# Option 2: batching by slice
+# Used only if INPUT_BIB_NUMBERS = []
+START = 0      # inclusive
+END = 2       # exclusive
 
 # zero-shot labels 
 LABELS = [
@@ -54,15 +61,30 @@ nlp.add_pipe("gliner_spacy", config=custom_config)
 with open(INPUT_FILE, "r", encoding="utf-8") as f:
     transcripts = json.load(f)
 
+"""
+Choose subset:
+- If INPUT_BIB_NUMBERS has values, process only those bib numbers.
+- If INPUT_BIB_NUMBERS is empty, process transcripts from START to END.
+"""
 
-wanted_bibs = set(str(bib).strip() for bib in INPUT_BIB_NUMBERS)
+if INPUT_BIB_NUMBERS:
+    wanted_bibs = set(str(bib).strip() for bib in INPUT_BIB_NUMBERS)
 
-subset = [
-    transcript for transcript in transcripts
-    if str(transcript.get("field_bib_number")).strip() in wanted_bibs
-]
+    subset = [
+        transcript for transcript in transcripts
+        if str(transcript.get("field_bib_number")).strip() in wanted_bibs
+    ]
+
+    print(f"Running on {len(subset)} selected bib numbers.")
+
+else:
+    subset = transcripts[START:END]
+
+    print(f"Running on transcript slice {START}:{END}.")
+    print(f"Total transcripts in batch: {len(subset)}")
 
 json_by_transcript = []
+
 entity_contexts = defaultdict(lambda: {
     "entity": None,
     "type": None,
@@ -122,7 +144,6 @@ for i, transcript in enumerate(subset, start=1):
         "interview_date": interview_date,
         "entities": transcript_entities
     })
-
 
 json_by_entity = []
 

@@ -6,3 +6,4 @@ initial_obs.txt
 parsed_unique_transcripts.json
 *.json
 relation_extraction.py
+*.log
