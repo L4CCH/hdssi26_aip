@@ -7,3 +7,5 @@ parsed_unique_transcripts.json
 *.json
 relation_extraction.py
 *.log
+sample_photos/
+embeddings/

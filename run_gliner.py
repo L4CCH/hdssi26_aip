@@ -14,8 +14,8 @@ from collections import defaultdict, Counter
 
 # I/O directories
 INPUT_FILE = "bib_interviewee_date_body.json"
-OUTPUT_BY_TRANSCRIPT = "gliner_by_transcript.json"
-OUTPUT_BY_ENTITY = "gliner_by_entity.json"
+OUTPUT_BY_TRANSCRIPT = "gliner_by_transcript_1700_1800.json"
+OUTPUT_BY_ENTITY = "gliner_by_entity_1700_1800.json"
 
 # Option 1: specific bib numbers
 # If this list is non-empty, the script will use these bib numbers
@@ -23,8 +23,8 @@ INPUT_BIB_NUMBERS = [] # ["46733", "47293"]
 
 # Option 2: batching by slice
 # Used only if INPUT_BIB_NUMBERS = []
-START = 0      # inclusive
-END = 100       # exclusive
+START = 1700      # inclusive
+END = 1800       # exclusive
 
 # zero-shot labels 
 LABELS = [
