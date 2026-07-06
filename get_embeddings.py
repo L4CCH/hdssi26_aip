@@ -1,5 +1,5 @@
 """
-generate_clip_embeddings.py
+get_embeddings.py
 
 Generates CLIP embeddings for local JPG images using SentenceTransformer.
 
