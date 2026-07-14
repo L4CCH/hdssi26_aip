@@ -1,4 +1,4 @@
-import duckdb
+atuimport duckdb
 
 # input json file (gliner by entity)
 input_file = "FILE_NAME.csv"
