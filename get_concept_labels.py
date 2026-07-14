@@ -25,17 +25,19 @@ OUTPUT_FILE = "embeddings/zero_shot_labels_top3.json"
 TOP_K = 3
 
 LABELS = [
-    "man",
-    "woman",
-    "group of men",
-    "group of women",
-    "machine"
+ 	"Individual Portrait",
+ 	"Group Portrait",
+  	"Natural Landscape",
+  	"Science Equipment",
+  	"Building",
+ 	"Scan of Paper Document",
+ 	"Snapshot of People"
 ]
 
 # Assign "Other" when the best label score is below this threshold.
 # You will likely need to inspect results and adjust this value.
 OTHER_LABEL = "Other"
-OTHER_THRESHOLD = 0.24
+OTHER_THRESHOLD = 0.22
 
 
 print("Loading model: sentence-transformers/clip-ViT-B-32")
