@@ -1,494 +1,164 @@
-"""
-run_tsne.py
-
-Runs t-SNE on CLIP image embeddings and creates a visualization
-colored by existing DBSCAN cluster assignments.
-
-Inputs:
-- embeddings/global_embeddings.npy
-- embeddings/clusters/dbscan_assignments.json
-
-Outputs:
-- embeddings/tsne_2d.npy
-- embeddings/tsne_plot_by_cluster.png
-"""
-
-import os
 import json
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
+from sklearn.preprocessing import normalize
 
 
-INPUT_FILE = "embeddings/global_embeddings.npy"
-CLUSTER_ASSIGNMENTS_FILE = (
-    "embeddings/clusters/dbscan_assignments.json"
+EMBEDDINGS_NPY = "cluster_embeddings/global_embeddings.npy"
+ASSIGNMENTS_JSON = (
+    "cluster_embeddings/clusters/dbscan_assignments.json"
+)
+OUTPUT_PLOT = (
+    "cluster_embeddings/clusters/dbscan_tsne_visualization.png"
 )
 
-OUTPUT_COORDINATES = "embeddings/tsne_2d.npy"
-OUTPUT_PLOT = "embeddings/tsne_plot_by_cluster.png"
+EPS = 0.15
+MIN_SAMPLES = 10
+METRIC = "cosine"
 
-RANDOM_STATE = 42
-MAX_PCA_COMPONENTS = 50
-DEFAULT_PERPLEXITY = 30
-
-POINT_SIZE = 30
-POINT_ALPHA = 0.8
-NOISE_ALPHA = 0.4
+PCA_COMPONENTS = 100
+TSNE_PERPLEXITY = 30
+TSNE_RANDOM_STATE = 42
 
 
 print("Loading embeddings...")
+embeddings = np.load(EMBEDDINGS_NPY)
 
-embeddings = np.load(
-    INPUT_FILE
-).astype(np.float32)
+print("Normalizing embeddings...")
+embeddings = normalize(embeddings)
 
-print(
-    "Embedding shape:",
-    embeddings.shape
-)
-
-
-# Validate embedding array
-if embeddings.ndim != 2:
-    raise ValueError(
-        f"Expected a 2D embedding array, "
-        f"but got shape {embeddings.shape}"
-    )
-
-n_samples, n_features = embeddings.shape
-
-if n_samples < 2:
-    raise ValueError(
-        "At least 2 embeddings are required "
-        "to run t-SNE."
-    )
-
-
-# Check for invalid values
-if not np.all(
-    np.isfinite(embeddings)
-):
-    raise ValueError(
-        "Embeddings contain NaN or infinite values."
-    )
-
-
-# Load DBSCAN cluster assignments
 print("Loading cluster assignments...")
-
-with open(
-    CLUSTER_ASSIGNMENTS_FILE,
-    "r",
-    encoding="utf-8"
-) as file:
+with open(ASSIGNMENTS_JSON, "r", encoding="utf-8") as file:
     assignments = json.load(file)
 
+cluster_labels = np.array(
+    [item["cluster"] for item in assignments]
+)
 
-# Support several common JSON formats
-if isinstance(assignments, list):
-
-    cluster_labels = []
-
-    for index, item in enumerate(assignments):
-
-        if not isinstance(item, dict):
-            raise ValueError(
-                "Each item in the cluster assignment "
-                "list must be a dictionary."
-            )
-
-        if "cluster" in item:
-            cluster_labels.append(
-                item["cluster"]
-            )
-
-        elif "cluster_id" in item:
-            cluster_labels.append(
-                item["cluster_id"]
-            )
-
-        elif "label" in item:
-            cluster_labels.append(
-                item["label"]
-            )
-
-        else:
-            raise KeyError(
-                f"Could not find a cluster label "
-                f"for assignment at index {index}. "
-                f"Expected 'cluster', 'cluster_id', "
-                f"or 'label'."
-            )
-
-
-elif isinstance(assignments, dict):
-
-    if "assignments" in assignments:
-
-        assignment_list = assignments[
-            "assignments"
-        ]
-
-        cluster_labels = []
-
-        for index, item in enumerate(
-            assignment_list
-        ):
-
-            if "cluster" in item:
-                cluster_labels.append(
-                    item["cluster"]
-                )
-
-            elif "cluster_id" in item:
-                cluster_labels.append(
-                    item["cluster_id"]
-                )
-
-            elif "label" in item:
-                cluster_labels.append(
-                    item["label"]
-                )
-
-            else:
-                raise KeyError(
-                    f"Could not find a cluster label "
-                    f"for assignment at index {index}."
-                )
-
-    else:
-        # Supports a dictionary such as:
-        # {
-        #     "image1.jpg": 0,
-        #     "image2.jpg": -1
-        # }
-        cluster_labels = list(
-            assignments.values()
-        )
-
-else:
+if len(embeddings) != len(cluster_labels):
     raise ValueError(
-        "Unsupported cluster assignment JSON format."
+        "The number of embeddings does not match the number of "
+        "cluster assignments.\n"
+        f"Embeddings: {len(embeddings)}\n"
+        f"Assignments: {len(cluster_labels)}"
     )
 
+print("Removing DBSCAN noise points (-1)...")
 
-cluster_labels = np.asarray(
-    cluster_labels,
-    dtype=int
-)
+mask = cluster_labels != -1
 
-print(
-    "Cluster label shape:",
-    cluster_labels.shape
-)
+filtered_embeddings = embeddings[mask]
+filtered_labels = cluster_labels[mask]
 
+print(f"Remaining images: {len(filtered_embeddings)}")
+print(f"Clusters shown: {len(np.unique(filtered_labels))}")
 
-# Confirm that every embedding has one cluster label
-if len(cluster_labels) != n_samples:
+if len(filtered_embeddings) == 0:
     raise ValueError(
-        f"Number of embeddings ({n_samples}) does not "
-        f"match number of cluster labels "
-        f"({len(cluster_labels)}). "
-        f"The assignment order must match the embedding "
-        f"row order."
+        "No clustered images remain after removing DBSCAN noise points."
     )
 
-
-unique_clusters = np.unique(
-    cluster_labels
-)
-
-non_noise_clusters = unique_clusters[
-    unique_clusters != -1
-]
-
-noise_count = int(
-    np.sum(cluster_labels == -1)
+# PCA
+effective_pca_components = min(
+    PCA_COMPONENTS,
+    filtered_embeddings.shape[0],
+    filtered_embeddings.shape[1],
 )
 
 print(
-    "Number of non-noise clusters:",
-    len(non_noise_clusters)
+    f"Running PCA to {effective_pca_components} dimensions..."
+)
+
+pca = PCA(
+    n_components=effective_pca_components,
+    random_state=TSNE_RANDOM_STATE,
+)
+
+pca_embeddings = pca.fit_transform(filtered_embeddings)
+
+explained_variance = (
+    np.sum(pca.explained_variance_ratio_) * 100
 )
 
 print(
-    "Number of noise points:",
-    noise_count
+    "Explained variance:",
+    round(explained_variance, 2),
+    "%",
 )
 
-
-# Normalize embeddings if needed
-norms = np.linalg.norm(
-    embeddings,
-    axis=1,
-    keepdims=True
+# t-SNE
+effective_perplexity = min(
+    TSNE_PERPLEXITY,
+    len(pca_embeddings) - 1,
 )
 
-if np.any(norms == 0):
+if effective_perplexity < 1:
     raise ValueError(
-        "One or more embeddings have a norm of 0."
+        "At least two clustered images are required to run t-SNE."
     )
-
-if not np.allclose(
-    norms,
-    1.0,
-    atol=1e-2
-):
-    print("Normalizing embeddings...")
-
-    embeddings = embeddings / norms
-
-else:
-    print(
-        "Embeddings are already normalized."
-    )
-
-
-# Automatically choose a valid perplexity
-perplexity = min(
-    DEFAULT_PERPLEXITY,
-    max(
-        2,
-        (n_samples - 1) // 3
-    )
-)
-
-perplexity = min(
-    perplexity,
-    n_samples - 1
-)
 
 print(
-    "Using perplexity:",
-    perplexity
+    f"Running t-SNE with perplexity={effective_perplexity}..."
 )
-
-
-# PCA is useful for larger datasets
-if n_samples > MAX_PCA_COMPONENTS:
-
-    pca_components = min(
-        MAX_PCA_COMPONENTS,
-        n_samples - 1,
-        n_features
-    )
-
-    print(
-        f"Running PCA "
-        f"({n_features} -> {pca_components})..."
-    )
-
-    pca = PCA(
-        n_components=pca_components,
-        random_state=RANDOM_STATE
-    )
-
-    tsne_input = pca.fit_transform(
-        embeddings
-    )
-
-    explained_variance = (
-        pca.explained_variance_ratio_.sum()
-    )
-
-    print(
-        "PCA explained variance:",
-        f"{explained_variance:.4f}"
-    )
-
-else:
-    print(
-        f"Skipping PCA because there are only "
-        f"{n_samples} embeddings."
-    )
-
-    tsne_input = embeddings
-
-
-# Run t-SNE
-print("Running t-SNE...")
 
 tsne = TSNE(
     n_components=2,
-    perplexity=perplexity,
-    learning_rate="auto",
+    perplexity=effective_perplexity,
     init="pca",
-    random_state=RANDOM_STATE
+    random_state=TSNE_RANDOM_STATE,
+    learning_rate="auto",
 )
 
-embeddings_2d = tsne.fit_transform(
-    tsne_input
+tsne_embeddings = tsne.fit_transform(pca_embeddings)
+
+print("t-SNE complete.")
+
+# Graphing
+plt.figure(figsize=(14, 10))
+
+scatter = plt.scatter(
+    tsne_embeddings[:, 0],
+    tsne_embeddings[:, 1],
+    c=filtered_labels,
+    cmap="tab20",
+    s=10,
+    alpha=0.8,
 )
-
-
-# Create output directories
-coordinate_output_directory = os.path.dirname(
-    OUTPUT_COORDINATES
-)
-
-plot_output_directory = os.path.dirname(
-    OUTPUT_PLOT
-)
-
-if coordinate_output_directory:
-    os.makedirs(
-        coordinate_output_directory,
-        exist_ok=True
-    )
-
-if plot_output_directory:
-    os.makedirs(
-        plot_output_directory,
-        exist_ok=True
-    )
-
-
-# Save t-SNE coordinates
-np.save(
-    OUTPUT_COORDINATES,
-    embeddings_2d
-)
-
-print(
-    "Saved t-SNE coordinates to:",
-    OUTPUT_COORDINATES
-)
-
-
-# Create cluster-colored visualization
-print(
-    "Creating cluster-colored visualization..."
-)
-
-plt.figure(
-    figsize=(12, 9)
-)
-
-
-# Use a continuous colormap so the script can
-# support more than 20 clusters
-colormap = plt.get_cmap(
-    "nipy_spectral"
-)
-
-number_of_clusters = len(
-    non_noise_clusters
-)
-
-
-# Plot each non-noise cluster separately
-for color_index, cluster_id in enumerate(
-    non_noise_clusters
-):
-
-    cluster_mask = (
-        cluster_labels == cluster_id
-    )
-
-    if number_of_clusters <= 1:
-        color_position = 0.5
-    else:
-        color_position = (
-            color_index
-            / number_of_clusters
-        )
-
-    cluster_color = colormap(
-        color_position
-    )
-
-    plt.scatter(
-        embeddings_2d[
-            cluster_mask,
-            0
-        ],
-        embeddings_2d[
-            cluster_mask,
-            1
-        ],
-        color=cluster_color,
-        s=POINT_SIZE,
-        alpha=POINT_ALPHA,
-        label=f"Cluster {cluster_id}"
-    )
-
-
-# Plot DBSCAN noise separately in gray
-noise_mask = (
-    cluster_labels == -1
-)
-
-if np.any(noise_mask):
-    plt.scatter(
-        embeddings_2d[
-            noise_mask,
-            0
-        ],
-        embeddings_2d[
-            noise_mask,
-            1
-        ],
-        color="lightgray",
-        edgecolors="none",
-        s=POINT_SIZE,
-        alpha=NOISE_ALPHA,
-        label="Noise"
-    )
-
 
 plt.title(
-    "t-SNE Visualization of CLIP Embeddings "
-    "Colored by DBSCAN Cluster"
+    "DBSCAN Cluster Visualization\n"
+    f"eps={EPS}, "
+    f"min_samples={MIN_SAMPLES}, "
+    f"metric='{METRIC}'\n"
+    f"PCA({effective_pca_components}) → t-SNE\n"
+    "Noise points removed"
 )
 
-plt.xlabel(
-    "t-SNE Dimension 1"
+plt.xlabel("t-SNE Dimension 1")
+plt.ylabel("t-SNE Dimension 2")
+
+plt.colorbar(
+    scatter,
+    label="Cluster ID",
 )
-
-plt.ylabel(
-    "t-SNE Dimension 2"
-)
-
-
-# Only show a legend when there are not too many
-# clusters. Large legends can cover the entire plot.
-if number_of_clusters <= 20:
-
-    plt.legend(
-        bbox_to_anchor=(1.02, 1),
-        loc="upper left",
-        fontsize=8,
-        markerscale=1.2
-    )
-
-else:
-    print(
-        "Skipping plot legend because there are "
-        f"{number_of_clusters} clusters."
-    )
-
 
 plt.tight_layout()
 
 plt.savefig(
     OUTPUT_PLOT,
     dpi=300,
-    bbox_inches="tight"
+    bbox_inches="tight",
 )
 
-print(
-    "Saved cluster-colored t-SNE visualization to:",
-    OUTPUT_PLOT
-)
+print("Saved visualization to:")
+print(OUTPUT_PLOT)
+
+# Terminal error checking to compare the number of embeddings
+# with the cluster summary JSON.
+print("Unique cluster labels:")
+print(np.unique(filtered_labels))
 
 plt.show()
-
-
-print("Done!")
-
-print(
-    "Output coordinate shape:",
-    embeddings_2d.shape
-)
