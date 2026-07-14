@@ -30,7 +30,7 @@ OUTPUT_CLUSTERS = os.path.join(OUTPUT_DIR, "clusters.json")
 OUTPUT_SUMMARY = os.path.join(OUTPUT_DIR, "cluster_summary.json")
 
 # Feel free to change these!!
-EPS = 0.2
+EPS = 0.15
 MIN_SAMPLES = 2
 N_JOBS = -1
 METRIC = "cosine"

@@ -1,7 +1,7 @@
-atuimport duckdb
+import duckdb
 
 # input json file (gliner by entity)
-input_file = "FILE_NAME.csv"
+input_file = "gliner_by_entity_0_100.json"
 
 # query the top 100 name entitys that has the highest total count
 query = f"""
@@ -17,5 +17,5 @@ query = f"""
 top_100_df = duckdb.sql(query).df()
 
 # write to csv
-output_csv = "top_100_names_INDEX1_INDEX2.csv"
+output_csv = "top_100_names_0_100.csv"
 top_100_df.to_csv(output_csv, index=False)
