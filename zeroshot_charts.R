@@ -22,6 +22,6 @@ data_counts %>%
   ggplot(aes(x = assigned_label, y = count, fill = count)) + 
   geom_col() + 
   scale_fill_gradient(low = "mediumpurple1", high = "mediumpurple4") + 
-  labs(x = "Entity Type", y = "Counts", fill = "Counts") +
+  labs(x = "Zero Shot Label", y = "Counts", fill = "Counts") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
   geom_text(aes(label = count), vjust = -0.5, size = 3.5)
