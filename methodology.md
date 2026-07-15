@@ -1,5 +1,11 @@
 # Methodologies
 
+## Table of Contents
+
+- [GLiNER2 Relation Extraction](#gliner2-relation-extraction)
+- [DBSCAN Clustering](#dbscan-clustering)
+- [Zero-Shot Concept Labeling](#zero-shot-concept-labeling)
+
 ## GLiNER2 Relation Extraction
 
 ### Overview
@@ -158,4 +164,12 @@ We generated the following knowledge graph visualizations for the 20 entities ra
 ![Top 20 by connectivity](readme_images/top20_connections.png)
 
 ![Top 20 by frequency](readme_images/top20_frequency.png)
+
+---
+
+## DBSCAN Clustering
+
+---
+
+## Zero-Shot Concept Labeling
 
