@@ -168,6 +168,94 @@ We generated the following knowledge graph visualizations for the 20 entities ra
 ---
 
 ## DBSCAN Clustering
+### Overview
+
+The clustering pipeline applies Density-Based Spatial Clustering of Applications with Noise (DBSCAN) to identify groups of visually similar images within the Emilio Segrè Visual Archives image collection. Unlike traditional supervised classification approaches, DBSCAN does not require predefined identity labels. Instead, it groups images based on similarity within the embedding space, allowing clusters of potentially related individuals to emerge automatically.
+
+Before clustering, each image is converted into a numerical representation called an embedding. These embeddings encode visual characteristics of each image into a high-dimensional vector space, where images with similar facial features are expected to have smaller distances between their corresponding vectors. DBSCAN operates on these embeddings to identify dense regions representing potential groups of related images while separating ambiguous images as noise.
+
+The goal of this pipeline is not to assign definitive identities to individuals, but to explore computational methods discovering meaningful patterns of similarity across a large-scale historical image collection.
+
+### Model and Clustering Method
+
+The clustering pipeline uses DBSCAN because it provides two important advantages for archival image analysis:
+
+- It does not require specifying the expected number of clusters beforehand, which is useful when the number of individuals represented in a historical image collection is unknown.
+- It can identify images that do not clearly belong to any group by assigning them as noise points rather than forcing every image into a cluster.
+
+DBSCAN relies on two primary clustering parameters:
+
+| Parameter | Description | Reasoning |
+| --- | --- | --- |
+| `eps` | Maximum distance between two embeddings for them to be considered neighbors. | Controls how similar two images must be in embedding space to be grouped together. Smaller values create stricter clusters, while larger values allow more images to be grouped together. |
+| `min_samples` | Minimum number of neighboring images required for a dense region to form a cluster. | Controls the minimum evidence required before identifying a group. Higher values produce more conservative clusters and classify more images as noise. |
+
+The initial implementation used manually selected values for `eps` and `min_samples`. Multiple parameter combinations were tested, and the resulting clusters were evaluated through visualization and qualitative inspection of whether images with similar facial characteristics appeared together.
+
+### Visualization Parameters
+
+After clustering, dimensionality reduction was applied to visualize the high-dimensional image embeddings. The following parameters were selected for PCA and t-SNE visualization:
+
+| Parameter | Description | Reasoning |
+| --- | --- | --- |
+| `PCA_COMPONENTS = 100` | Number of dimensions retained after Principal Component Analysis. | Reduces the high-dimensional embedding space while preserving important variance before applying t-SNE. |
+| `TSNE_RANDOM_STATE = 42` | Random seed used for reproducible t-SNE results. | Ensures that repeated runs produce comparable visualizations. |
+
+These visualization parameters were selected to balance computational efficiency and preservation of meaningful relationships between image embeddings.
+
+### Dimensionality Reduction and Visualization
+
+Image embeddings exist in a high-dimensional feature space, where each image is represented by a numerical vector containing many dimensions. While these embeddings are useful for measuring similarity between images, they cannot be directly visualized or easily interpreted. Dimensionality reduction techniques were therefore applied to project the embeddings into a lower-dimensional space while preserving meaningful relationships between images.
+
+The visualization pipeline follows:
+
+```
+Image and File Embeddings
+        ↓
+DBSCAN Clustering
+        ↓
+DBSCAN Assignments (cluster JSON)
+        ↓
+Remove Noise Points (-1) (implemented in run_tsne.py)
+        ↓
+Principal Component Analysis (PCA) (implemented in run_tsne.py)
+        ↓
+t-SNE Visualization
+        ↓
+dbscan_tsne_visualization.png
+```
+
+After DBSCAN clustering, images assigned to the noise category (`cluster = -1`) are removed before visualization. These images represent points that do not meet DBSCAN's density requirements and may not belong to a meaningful cluster. Removing them before dimensionality reduction prevents outlier images from influencing the PCA and t-SNE projections, allowing the visualization to focus on images that were assigned to identified clusters.
+
+PCA is first applied to reduce the dimensionality of the image embeddings while retaining the most important patterns of variation within the data. The resulting lower-dimensional representation is then passed into t-distributed Stochastic Neighbor Embedding (t-SNE), which projects the embeddings into two dimensions. Unlike PCA, which focuses on preserving overall variance, t-SNE emphasizes local neighborhood relationships, making it useful for visually examining whether similar images appear near one another.
+
+The final t-SNE visualization provides a qualitative method for evaluating DBSCAN results. Each point represents an image embedding, and colors indicate the assigned cluster. These visualizations are used to inspect cluster separation, identify possible misclustered images, and assess whether groups of visually similar individuals appear together.
+
+### Outputs
+
+The output of the pipeline is:
+
+```
+cluster_embeddings/
+└── clusters/
+    ├── dbscan_assignments.json
+    └── dbscan_tsne_visualization.png
+```
+
+The `dbscan_assignments.json` file stores the predicted cluster assignment for each image.
+
+Each record contains:
+
+| Field | Description |
+| --- | --- |
+| Image identifier | Filename or identifier associated with the image. |
+| Cluster | DBSCAN cluster assignment. A value of `-1` indicates a noise point. |
+
+The visualization output provides a two-dimensional representation of the discovered clusters. Each point represents one image, and colors indicate the DBSCAN cluster assignment. These visualizations are used to evaluate cluster separation, identify possible errors, and understand patterns within the image collection.
+
+### Limitations
+
+DBSCAN performance depends heavily on the quality of the image embeddings and the selected parameters. Because the dataset contains a limited number (5,000 total images) of historical images with variations in pose, lighting, age, hairstyle, and image quality, visually similar images may not always correspond to the same identity.
 
 ---
 
