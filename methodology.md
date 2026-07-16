@@ -173,3 +173,65 @@ We generated the following knowledge graph visualizations for the 20 entities ra
 
 ## Zero-Shot Concept Labeling
 
+### Overview
+
+The zero-shot concept labeling pipeline utilizes OpenAI's CLIP model to embed 512 dimenensions on each individual image, mapping them onto a vector space. This allows for images to be compared against a set of custom user-defined labels, enabling for zero-shot concept labeling of all images without the need for user training. In our usecase, we utilize a custom set of labels that broadly categorizes the images into different types, that allow us to better understand the make up of the input image dataset. 
+
+Our custom set of labels is as follows:
+
+* 	`Individual Portrait`
+* 	`Group Portrait`
+* 	`Natural Landscape`
+* 	`Science Equipment`
+* 	`Building`
+*	`Scan of Paper Document`
+*	`Snapshot of People`
+
+The result of this pipeline is a JSON file that labels all images under one of our custom labels, lists the model's second and third ranked labels, and the confidence score associated with each prediction. Additionally, a `threshold` value is set, which is the minimum confidence score that is required for the label to be assigned to a corresponding image, otherwise the image is labeled as `other`.
+
+---
+
+The zero-shot concept labeling pipeline is ran in the following steps.
+
+1. `get_embeddings.py` embeds each image utilizing OpenAI's CLIP model. This produces a `global_embeddings.npy`.
+2. `get_concept_labels.py` takes in a set of custom labels.
+3. Each image's embeddings are then compared to each label, and is assigned a confidence score for each label.
+4. The top three labels for each image are then attached to each image's corresponding json object.
+5. The highest confidence label is checked against the `threshold` score. If greater, the image is assigned to that label, otherwise it is assigned as `other`.
+6. `zero_shot_labels_top3.json`is output, containing a set of JSON objects, with each representing an image, and the model's label prediction. 
+7. `zero_shot_chart.R` aggregates the JSON objects and creates a bar chart visualization, showcasing the number of images assigned to each label.
+
+--- 
+
+The primary output is:
+
+```
+embeddings/
+└── zero_shot_labels_top3.json
+```
+
+This dataset contains a JSON object that represents each individual image within the input image dataset, with the following fields.
+
+| `filename` | Name of the file in the original image dataset. |
+| `assigned_label` | The label that the is assigned to the image (highest confidence label, or `other` if less than confidence threshold). | 
+| `raw_top1_label` | The highest confidence label, regardless of threshold value |
+| `raw_top1_score` | The confidence score of the highest confidence label. |
+| `other_threshhold` | The threshold value the image must pass before being assigned the `other` label.|
+| `top3` | List containing the top 3 labels that each image is assigned, in order of confidence score.
+
+Each object within the `top3` list contains the following fields:
+
+    | `label` | The label as defined by the set of custom labels. |
+    | `score` | The confidence score of the model of that specific label. |
+
+---
+
+To visualize our labels, we utilized a bar chart, with each column representing a label within our set.
+
+`zero_shot_chart.R`, takes in the JSON file `zero_shot_labels_top3.json` produced from `get_concept_labels.py`, and creates a bar chart visualization by aggregating the image's corresponding JSON objects by their `assigned_label`. The final bar chart visualizes the raw number of each label assigned to the dataset.
+
+### Example Outputs
+
+![Zero Shot Concept Labeling Counts Visualization](readme_images/zero_shot_bar_chart.png)
+
+
