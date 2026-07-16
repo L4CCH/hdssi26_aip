@@ -253,6 +253,10 @@ Each record contains:
 
 The visualization output provides a two-dimensional representation of the discovered clusters. Each point represents one image, and colors indicate the DBSCAN cluster assignment. These visualizations are used to evaluate cluster separation, identify possible errors, and understand patterns within the image collection.
 
+### Example Output
+
+![placeholder](readme_images/DBSCAN%20Visualization.png)
+
 ### Limitations
 
 DBSCAN performance depends heavily on the quality of the image embeddings and the selected parameters. Because the dataset contains a limited number (5,000 total images) of historical images with variations in pose, lighting, age, hairstyle, and image quality, visually similar images may not always correspond to the same identity.
