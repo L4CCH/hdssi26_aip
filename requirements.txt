@@ -12,3 +12,6 @@ gliner-spacy==0.0.11
 torch==2.7.0
 spacy==3.8.14
 matplotlib==3.10.6
+streamlit==1.59.2
+pyvis==0.3.2
+pandas==2.3.3
