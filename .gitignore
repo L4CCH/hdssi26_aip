@@ -9,3 +9,4 @@ relation_extraction.py
 *.log
 sample_photos/
 embeddings/
+knowledge_graph_app/gliner2_relations_consolidated.json
