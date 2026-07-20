@@ -62,10 +62,6 @@ st.markdown(
             color: #111111 !important;
         }
 
-        [data-testid="stHeader"] {
-            display: none !important;
-        }
-
         [data-testid="stSidebar"] {
             background-color: #f7f7f7 !important;
             border-right: 1px solid #d9d9d9;
